@@ -48,6 +48,13 @@ export interface VoiceCtx {
   params: SoundParams;
 }
 
+/** Per-layer gain so that every layer at full level is about equally loud. Measured with
+ *  scripts/measure.mjs (90th percentile of 400 ms loudness windows); re-measure after changing a layer. */
+export const CALIBRATION: Record<string, number> = {
+  drone: 0.364, chimes: 1.697, bowls: 3.017, koto: 1.813, ocean: 0.49, rain: 2.162,
+  wind: 1.397, stream: 3.175, noise: 0.852, pulse: 0.525, breath: 2.713,
+};
+
 /** the kind of sound a touch makes */
 export type TouchSound = "bell" | "pluck" | "pop" | "drop" | "burst" | "split" | "thump";
 
@@ -494,7 +501,7 @@ export class SoundEngine {
         this.voices.set(info.id, entry);
       }
       if (!entry) continue;
-      entry.gain.gain.setTargetAtTime(level * level, now, 0.4);
+      entry.gain.gain.setTargetAtTime(level * level * (CALIBRATION[info.id] ?? 1), now, 0.4);
       if (level > 0.002) entry.voice.update(now);
       else if (level < 0.0005) { entry.voice.stop(); entry.gain.disconnect(); this.voices.delete(info.id); }
     }

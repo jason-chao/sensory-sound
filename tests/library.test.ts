@@ -33,3 +33,13 @@ describe("seeded randomness", () => {
     expect(subSeed(5, "audio")).not.toBe(subSeed(5, "other"));
   });
 });
+
+import { CALIBRATION } from "../src/engine";
+describe("loudness calibration", () => {
+  it("covers every layer with a positive gain", () => {
+    for (const l of LAYERS) expect(CALIBRATION[l.id], l.id).toBeGreaterThan(0);
+  });
+  it("leaves room on every soundscape level to turn a layer up", () => {
+    for (const s of SOUNDSCAPES) for (const v of Object.values(s.layers)) expect(v).toBeLessThanOrEqual(0.8);
+  });
+});

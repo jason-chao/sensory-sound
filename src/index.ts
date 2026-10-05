@@ -1,4 +1,4 @@
-export { SoundEngine, DEFAULT_PARAMS } from "./engine";
+export { SoundEngine, DEFAULT_PARAMS, CALIBRATION } from "./engine";
 export type { SoundParams, EngineOptions, TouchSound } from "./engine";
 export { LAYERS, SCALES, SOUNDSCAPES } from "./layers";
 export type { LayerInfo, Soundscape } from "./layers";
