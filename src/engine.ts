@@ -35,6 +35,12 @@ export interface EngineOptions {
   context?: AudioContext | OfflineAudioContext;
   /** seconds for the sound to rise after start(); default 5 */
   fadeInSeconds?: number;
+  /** "speakers" (default) plays through the context's destination; "stream" plays only into the
+   *  MediaStream returned by stream(), for a media element with lock-screen controls */
+  output?: "speakers" | "stream";
+  /** how far ahead notes are scheduled, in seconds; default 0.3. A page whose timers are throttled
+   *  in the background (a phone with the screen off) should use 2 or more. */
+  lookahead?: number;
 }
 
 /** Everything a voice needs from the engine. */
@@ -46,6 +52,8 @@ export interface VoiceCtx {
   /** frequency of a scale degree; degree may exceed the scale length (wraps by octave) */
   freq(degree: number, octave: number): number;
   params: SoundParams;
+  /** seconds ahead to schedule */
+  lookahead: number;
 }
 
 /** Per-layer gain so that every layer at full level is about equally loud. Measured with
@@ -161,8 +169,8 @@ const chimes: VoiceFactory = (v) => {
   let last = 2;
   return {
     update(now) {
-      if (next < now - 0.5) next = now; // after a pause, do not play the backlog at once
-      while (next < now + 0.3) {
+      if (next < now - 0.5) next = now; // after a stall, do not play the backlog at once
+      while (next < now + v.lookahead) {
         const n = SCALES[v.params.scale]?.steps.length ?? 5;
         // mostly small steps: melodies that wander are calmer than leaps
         last = Math.max(0, Math.min(2 * n, last + Math.round((v.rand() - 0.5) * 4)));
@@ -179,8 +187,8 @@ const bowls: VoiceFactory = (v) => {
   let next = v.ctx.currentTime + 1;
   return {
     update(now) {
-      if (next < now - 0.5) next = now; // after a pause, do not play the backlog at once
-      while (next < now + 0.3) {
+      if (next < now - 0.5) next = now; // after a stall, do not play the backlog at once
+      while (next < now + v.lookahead) {
         const when = Math.max(next, now + 0.02);
         const f = v.freq(Math.floor(v.rand() * 3) * 2, 0);
         const pan = v.rand() * 1.2 - 0.6;
@@ -223,7 +231,7 @@ const koto: VoiceFactory = (v) => {
   return {
     update(now) {
       if (next < now - 0.5) next = now;
-      while (next < now + 0.3) {
+      while (next < now + v.lookahead) {
         const when = Math.max(next, now + 0.02);
         const n = SCALES[v.params.scale]?.steps.length ?? 5;
         const len = 3 + Math.floor(v.rand() * 3), start = Math.floor(v.rand() * n), dir = v.rand() < 0.5 ? 1 : -1;
@@ -255,8 +263,8 @@ const rain: VoiceFactory = (v) => {
   let next = v.ctx.currentTime + 0.5;
   return {
     update(now) {
-      if (next < now - 0.5) next = now; // after a pause, do not play the backlog at once
-      while (next < now + 0.3) {
+      if (next < now - 0.5) next = now; // after a stall, do not play the backlog at once
+      while (next < now + v.lookahead) {
         const when = Math.max(next, now + 0.02);
         const o = v.ctx.createOscillator(); const f = 900 + v.rand() * 1400;
         o.frequency.setValueAtTime(f, when); o.frequency.exponentialRampToValueAtTime(f * 0.6, when + 0.12);
@@ -316,8 +324,8 @@ const pulse: VoiceFactory = (v) => {
   };
   return {
     update(now) {
-      if (next < now - 0.5) next = now; // after a pause, do not play the backlog at once
-      while (next < now + 0.3) {
+      if (next < now - 0.5) next = now; // after a stall, do not play the backlog at once
+      while (next < now + v.lookahead) {
         const when = Math.max(next, now + 0.02);
         const beat = 60 / v.params.pulseRate;
         thump(when, 0.5); thump(when + beat * 0.3, 0.3);
@@ -357,6 +365,8 @@ export class SoundEngine {
   private seed: number;
   private fadeIn: number;
   private given: AudioContext | OfflineAudioContext | undefined;
+  private output: "speakers" | "stream";
+  private lookahead: number;
   /** running layers by id */
   readonly voices = new Map<string, { voice: Voice; gain: GainNode }>();
   private vctx!: VoiceCtx;
@@ -374,6 +384,8 @@ export class SoundEngine {
     this.seed = opts.seed ?? 1;
     this.fadeIn = opts.fadeInSeconds ?? 5;
     this.given = opts.context;
+    this.output = opts.output ?? "speakers";
+    this.lookahead = opts.lookahead ?? 0.3;
   }
 
   /** Start producing sound. Browsers allow this only after the person has tapped or clicked. */
@@ -400,14 +412,16 @@ export class SoundEngine {
     bus.connect(this.dry).connect(this.soften);
     bus.connect(conv).connect(this.wet).connect(this.soften);
     this.soften.connect(this.master).connect(this.fade).connect(comp).connect(clip);
-    clip.connect(ctx.destination); clip.connect(this.analyser);
+    clip.connect(this.analyser);
+    if (this.output === "speakers" || !(ctx instanceof AudioContext)) clip.connect(ctx.destination);
+    else { this.streamDest = ctx.createMediaStreamDestination(); clip.connect(this.streamDest); }
     // slow start: sound rises over several seconds, never arrives at once
     this.fade.gain.setValueAtTime(0, ctx.currentTime);
     this.fade.gain.linearRampToValueAtTime(1, ctx.currentTime + this.fadeIn);
 
     const params = this.params;
     this.vctx = {
-      ctx: ctx as AudioContext, out: bus, rand, noise: noiseBuffers(ctx, rand), params,
+      ctx: ctx as AudioContext, out: bus, rand, noise: noiseBuffers(ctx, rand), params, lookahead: this.lookahead,
       freq(degree, octave) {
         const steps = (SCALES[params.scale] ?? SCALES.pentaMajor).steps;
         const n = steps.length;
@@ -575,7 +589,7 @@ export class SoundEngine {
 
   /** The output as a media stream: for a media element (lock-screen playback) or a recorder. */
   stream(): MediaStream | null {
-    if (!(this.ctx instanceof AudioContext)) return null;
+    if (!this.ctx || !(this.ctx instanceof AudioContext)) return null;
     if (!this.streamDest) {
       this.streamDest = this.ctx.createMediaStreamDestination();
       this.analyser!.connect(this.streamDest);

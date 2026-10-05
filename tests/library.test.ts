@@ -43,3 +43,12 @@ describe("loudness calibration", () => {
     for (const s of SOUNDSCAPES) for (const v of Object.values(s.layers)) expect(v).toBeLessThanOrEqual(0.8);
   });
 });
+
+describe("engine options", () => {
+  it("accepts output and lookahead without a context", async () => {
+    const { SoundEngine } = await import("../src/engine");
+    const e = new SoundEngine({ output: "stream", lookahead: 2 });
+    expect(e.stream()).toBeNull();   // nothing until start()
+    expect(e.params.volume).toBe(0.4);
+  });
+});

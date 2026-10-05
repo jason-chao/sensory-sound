@@ -37,6 +37,15 @@ engine.touch(0.25, 0.6, "pluck");                      // a plucked note; x pick
 engine.setStopped(true);                               // quick fade to silence
 ```
 
+For a page that should keep playing with the phone's screen off, send the sound into a media element instead of straight to the speakers, and give the scheduler more room, because browsers slow a background page's timers:
+
+```js
+const engine = new SoundEngine({ output: "stream", lookahead: 2 });
+await engine.start();
+audioElement.srcObject = engine.stream();
+await audioElement.play();
+```
+
 To make a recording, render it offline:
 
 ```js
