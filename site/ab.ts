@@ -126,7 +126,7 @@ function setupBowl(kind: Kind, seed: number): (e: SoundEngine) => void {
     const bowl = crystal ? bowls.crystal(r) : bowls.bronze(r);
     if (kind.startsWith("struck")) bowls.strike(v, v.bowls, "ab", 0.2, bowl, { angle: r() * Math.PI, mallet: crystal ? 0.15 : 0.3, gain: 0.1, pan: 0 });
     else if (crystal) bowls.rub(v, v.bowls, "ab", 0.2, bowl, { seconds: 24, rate: 0.3 + r() * 0.15, depth: 0.45, swell: 12 + r() * 8, gain: 0.08 });
-    else bowls.rub(v, v.bowls, "ab", 0.2, bowl, { seconds: 16, rate: 1.0 + r() * 1.2, depth: 0.7 + r() * 0.25, swell: 7 + r() * 5, gain: 0.08 });
+    else bowls.rub(v, v.bowls, "ab", 0.2, bowl, { seconds: 16, rate: 1.0 + r() * 1.2, depth: 0.7 + r() * 0.2, swell: 7 + r() * 5, gain: 0.08 });
   };
 }
 

@@ -66,7 +66,7 @@ export interface VoiceCtx {
 export const CALIBRATION: Record<string, number> = {
   drone: 0.364, chimes: 1.697, bowls: 3.017, koto: 1.813, ocean: 0.49, rain: 2.162,
   wind: 1.397, stream: 3.175, noise: 0.852, pulse: 0.525, breath: 2.713,
-  bronze: 1.646, rubbed: 1.232, crystal: 1.626,
+  bronze: 1.646, rubbed: 2.056, crystal: 1.626,
 };
 
 /** the kind of sound a touch makes */
