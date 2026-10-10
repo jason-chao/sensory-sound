@@ -230,7 +230,7 @@ export interface Rub {
   seconds: number;
   /** rises and falls per second heard as the pattern turns: about 1 to 3 for bronze, 0.3 to 0.5 for crystal */
   rate: number;
-  /** how deep that rise and fall goes, 0..1: 0.45 is about 5 dB peak to trough, 0.7 about 11 dB, 0.9 about 23 dB */
+  /** modulation index of that rise and fall, 0..1: 0.45 is about 8 dB peak to trough, 0.7 about 15 dB, 0.9 about 26 dB */
   depth: number;
   /** seconds for the tone to swell to within a few percent of full */
   swell: number;
@@ -256,10 +256,12 @@ export function rub(v: VoiceCtx, pool: BowlPool, layer: string, when: number, bo
   const swell = Math.min(rub.swell, rub.seconds * 0.7);
   const env = ctx.createGain(); env.gain.value = 0;
   const steps = 64, curve = new Float32Array(steps), k = q ? 6 : 8;
-  const peakGain = Math.pow(10, rub.depth * 1.6);           // the modulation's peak gain, see below
-  for (let i = 0; i < steps; i++) curve[i] = rub.gain / peakGain / (1 + Math.exp(-(i / (steps - 1) - 0.6) * k));
+  for (let i = 0; i < steps; i++) curve[i] = rub.gain / (1 + Math.exp(-(i / (steps - 1) - 0.6) * k));
   env.gain.setValueCurveAtTime(curve, when, swell);
   env.gain.setTargetAtTime(0, release, tau(ringFor));
+  const envHi = ctx.createGain(); envHi.gain.value = 0;    // the same swell for the high tones, which move on their own
+  envHi.gain.setValueCurveAtTime(curve, when, swell);
+  envHi.gain.setTargetAtTime(0, release, tau(bowl.modes[1].t60[0]));
   // unevenness: a slow random wobble, as a hand's pressure and a stick's speed vary, that
   // moves the level by a few decibels, the turning rate by about a seventh and the pitch
   // by a few cents
@@ -269,41 +271,46 @@ export function rub(v: VoiceCtx, pool: BowlPool, layer: string, when: number, bo
   const wobble = (amount: number, target: AudioParam) => { const g = ctx.createGain(); g.gain.value = amount; slp.connect(g).connect(target); };
   const wob = ctx.createGain(); wob.gain.value = 1;
   wobble(q ? 6 : 12, wob.gain);                            // about ±1.5 dB for crystal, ±2.5 dB for bronze
-  // the turning pattern: the two ears sit at different angles, so their rises alternate. The
-  // envelope of a turning pattern is a rectified sine, |sin|: broad peaks and brief, sharp dips,
-  // so a sine at half the rate is folded by a wave shaper. The depth itself wanders by about
-  // ±40 %, as it does under a hand.
-  const md = peakGain - 1;                                  // peak to trough: 0.45 -> 5 dB, 0.7 -> 11 dB, 0.9 -> 23 dB
+  // the turning pattern: the two ears sit at different angles, so their rises alternate; the
+  // depth wanders by about ±40 %, as it does under a hand
   const merge = ctx.createChannelMerger(2);
-  const fold = new Float32Array(1025); for (let i = 0; i < 1025; i++) fold[i] = Math.abs(i / 512 - 1);
   for (const side of [0, 1]) {
     const am = ctx.createGain(); am.gain.value = 1;
-    const lfo = ctx.createOscillator(); lfo.frequency.value = rub.rate / 2;
-    wobble(rub.rate * 2.5, lfo.frequency);
-    const shaper = ctx.createWaveShaper(); shaper.curve = fold;
-    const depth = ctx.createGain(); depth.gain.value = md;
-    wobble(md * 15, depth.gain);
+    const lfo = ctx.createOscillator(); lfo.frequency.value = rub.rate;
+    wobble(rub.rate * 5, lfo.frequency);
+    const depth = ctx.createGain(); depth.gain.value = rub.depth;
+    wobble(rub.depth * 15, depth.gain);
     depth.gain.setTargetAtTime(0, release, 1.2);         // the pattern stops turning
-    lfo.connect(shaper).connect(depth).connect(am.gain);
+    lfo.connect(depth).connect(am.gain);
     const t0 = when + side * 0.5 / rub.rate;             // half a cycle apart
     lfo.start(t0); lfo.stop(stop); source(lfo);
     wob.connect(am).connect(merge, 0, side);
   }
+  // the high components belong to the next pattern up, with six maxima a turn instead of
+  // four, so they rise and fall at one and a half times the rate, on their own
+  const amHi = ctx.createGain(); amHi.gain.value = 1;
+  const lfoHi = ctx.createOscillator(); lfoHi.frequency.value = rub.rate * 1.5;
+  wobble(rub.rate * 9, lfoHi.frequency);
+  const depthHi = ctx.createGain(); depthHi.gain.value = 0.5;
+  depthHi.gain.setTargetAtTime(0, release, 1.2);
+  lfoHi.connect(depthHi).connect(amHi.gain);
+  lfoHi.start(when + 0.17 / rub.rate); lfoHi.stop(stop); source(lfoHi);
+  envHi.connect(amHi); amHi.connect(merge, 0, 0); amHi.connect(merge, 0, 1);
   env.connect(wob); merge.connect(out).connect(v.out);
   // the sung mode, slightly below the free pitch, its twin far weaker than after a strike
   // (the stick drives one member), faint locked harmonics, and the bowl's own second partial
   const sung = m.f * 0.999;
-  const tones: [number, number][] = [
-    [sung, 1], [sung + m.split, 0.15],
-    [sung * 2, dB(q ? -45 : -32)], [sung * 3, dB(q ? -60 : -55)],
-    [bowl.modes[1].f, dB(q ? -48 : -33)],
+  const tones: [number, number, boolean][] = [
+    [sung, 1, false], [sung + m.split, 0.15, false],
+    [sung * 2, dB(q ? -45 : -30), true], [sung * 3, dB(q ? -60 : -55), true],
+    [bowl.modes[1].f, dB(q ? -48 : -30), true],
   ];
   let carrier: OscillatorNode | null = null;
-  for (const [f, level] of tones) {
+  for (const [f, level, high] of tones) {
     const o = ctx.createOscillator(); o.frequency.value = f;
-    wobble(q ? 60 : 170, o.detune);                       // cents
+    wobble((q ? 60 : 170) * (high ? 1.5 : 1), o.detune);  // cents; the high tones wander a little more
     const g = ctx.createGain(); g.gain.value = level;
-    o.connect(g).connect(env);
+    o.connect(g).connect(high ? envHi : env);
     o.start(when); o.stop(stop); source(o);
     carrier ??= o;
   }
@@ -316,7 +323,7 @@ export function rub(v: VoiceCtx, pool: BowlPool, layer: string, when: number, bo
   gg.gain.setTargetAtTime(0, release, 0.15);
   grain.connect(glp).connect(ringmod).connect(gg).connect(env);
   grain.start(when, 1 + (rub.rate * 3) % 5); grain.stop(release + 1); source(grain, release + 1);
-  ring.partials.push({ f: sung, amp: (t) => t < when ? 0 : t < release ? peakGain * curve[Math.min(steps - 1, Math.floor((t - when) / swell * steps))] : rub.gain * Math.exp(-(t - release) / tau(ringFor)) });
+  ring.partials.push({ f: sung, amp: (t) => t < when ? 0 : t < release ? curve[Math.min(steps - 1, Math.floor((t - when) / swell * steps))] : rub.gain * Math.exp(-(t - release) / tau(ringFor)) });
   // friction: a breath of noise above the tone, far below it, gone when the stick leaves
   const fr = ctx.createBufferSource(); fr.buffer = v.noise.white; fr.loop = true; fr.loopEnd = fr.buffer.duration - 0.5;
   const hp = ctx.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 2500; hp.Q.value = 0.5;
@@ -328,7 +335,7 @@ export function rub(v: VoiceCtx, pool: BowlPool, layer: string, when: number, bo
 }
 
 /** sources a rub needs from the pool's budget */
-export const RUB_SOURCES = 11;
+export const RUB_SOURCES = 12;
 
 /** Random values for one event, keyed by the layer and the event's index. */
 const eventRand = (seed: number, layer: string, i: number) => mulberry32(subSeed(subSeed(seed, "bowls:" + layer), "e" + i));
