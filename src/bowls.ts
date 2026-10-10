@@ -237,58 +237,78 @@ export interface Rub {
   gain: number;
 }
 
-/** Rub a bowl from `when` and release it after `rub.seconds`, into its own ringing decay. */
+/** Rub a bowl from `when` and release it after `rub.seconds`, into its own ringing decay.
+ *  Against the recordings: a rubbed bronze bowl rises and falls 16 to 22 dB at 1 to 2 Hz with
+ *  the rate wandering, its pitch wanders by 0.2 to 0.5 %, the exact second harmonic sits about
+ *  26 dB down and the bowl's own second partial about 27 dB down; crystal swells over 10 to
+ *  20 s and moves only 3 to 7 dB at 0.3 to 0.45 Hz. */
 export function rub(v: VoiceCtx, pool: BowlPool, layer: string, when: number, bowl: Bowl, rub: Rub): void {
   const { ctx } = v;
+  const q = bowl.material === "crystal";
   const m = bowl.modes[0];
   const release = when + rub.seconds;
   const ringFor = m.t60[0];
   const out = ctx.createGain(); out.gain.value = 1;
   const ring: Ring = { layer, born: when, gain: out, nodes: [], partials: [], stolen: false };
+  const stop = release + ringFor + 0.1;
+  const source = (node: AudioScheduledSourceNode, until = stop) => ring.nodes.push({ node, until });
   // the swell: logistic rise, held, then the struck decay once the stick leaves
+  const swell = Math.min(rub.swell, rub.seconds * 0.7);
   const env = ctx.createGain(); env.gain.value = 0;
-  const swell = Math.min(rub.swell, rub.seconds * 0.6);
-  const steps = 64, curve = new Float32Array(steps);
-  for (let i = 0; i < steps; i++) curve[i] = rub.gain / (1 + Math.exp(-(i / (steps - 1) - 0.6) * 11));
+  const steps = 64, curve = new Float32Array(steps), k = q ? 6 : 8;
+  for (let i = 0; i < steps; i++) curve[i] = rub.gain / (1 + Math.exp(-(i / (steps - 1) - 0.6) * k));
   env.gain.setValueCurveAtTime(curve, when, swell);
   env.gain.setTargetAtTime(0, release, tau(ringFor));
-  // the turning pattern: the two ears sit at different angles, so their rises alternate
+  // the turning pattern: the two ears sit at different angles, so their rises alternate; the
+  // stick's speed wanders, so the rate drifts by about a seventh
   const merge = ctx.createChannelMerger(2);
-  const stop = release + ringFor + 0.1;
+  const drift = ctx.createOscillator(); drift.frequency.value = 0.05 + (rub.rate % 0.07);
+  const driftGain = ctx.createGain(); driftGain.gain.value = rub.rate * 0.14;
+  drift.connect(driftGain); drift.start(when); drift.stop(stop); source(drift);
   for (const side of [0, 1]) {
     const am = ctx.createGain(); am.gain.value = 1;
     const lfo = ctx.createOscillator(); lfo.frequency.value = rub.rate;
+    driftGain.connect(lfo.frequency);
     const depth = ctx.createGain(); depth.gain.value = rub.depth;
     depth.gain.setTargetAtTime(0, release, 1.2);         // the pattern stops turning
     lfo.connect(depth).connect(am.gain);
     const t0 = when + side * 0.5 / rub.rate;             // half a cycle apart
-    lfo.start(t0); lfo.stop(stop);
-    ring.nodes.push({ node: lfo, until: stop });
+    lfo.start(t0); lfo.stop(stop); source(lfo);
     env.connect(am).connect(merge, 0, side);
   }
   merge.connect(out).connect(v.out);
+  // the pitch wanders slowly, as the stick's pressure changes
+  const wander = ctx.createOscillator(); wander.frequency.value = 0.12 + (rub.rate % 0.18);
+  const wanderGain = ctx.createGain(); wanderGain.gain.value = q ? 1.5 : 4;   // cents
+  wander.connect(wanderGain); wander.start(when); wander.stop(stop); source(wander);
   // the sung mode, slightly below the free pitch, its twin far weaker than after a strike
-  // (the stick drives one member), and faint locked harmonics
+  // (the stick drives one member), faint locked harmonics, and the bowl's own second partial
   const sung = m.f * 0.999;
-  const tones: [number, number][] = [[sung, 1], [sung + m.split, 0.15], [sung * 2, dB(-34)], [sung * 3, dB(-38)]];
+  const tones: [number, number][] = [
+    [sung, 1], [sung + m.split, 0.15],
+    [sung * 2, dB(q ? -45 : -28)], [sung * 3, dB(q ? -60 : -50)],
+    [bowl.modes[1].f, dB(q ? -48 : -30)],
+  ];
   for (const [f, level] of tones) {
     const o = ctx.createOscillator(); o.frequency.value = f;
+    wanderGain.connect(o.detune);
     const g = ctx.createGain(); g.gain.value = level;
     o.connect(g).connect(env);
-    o.start(when); o.stop(stop);
-    ring.nodes.push({ node: o, until: stop });
+    o.start(when); o.stop(stop); source(o);
   }
   ring.partials.push({ f: sung, amp: (t) => t < when ? 0 : t < release ? rub.gain * curve[Math.min(steps - 1, Math.floor((t - when) / swell * steps))] : rub.gain * Math.exp(-(t - release) / tau(ringFor)) });
   // friction: a breath of noise above the tone, far below it, gone when the stick leaves
   const fr = ctx.createBufferSource(); fr.buffer = v.noise.white; fr.loop = true; fr.loopEnd = fr.buffer.duration - 0.5;
   const hp = ctx.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 2500; hp.Q.value = 0.5;
-  const fg = ctx.createGain(); fg.gain.value = dB(bowl.material === "crystal" ? -55 : -45) / 0.27;   // the buffer's RMS above the filter is about 0.27
+  const fg = ctx.createGain(); fg.gain.value = dB(q ? -55 : -45) / 0.27;   // the buffer's RMS above the filter is about 0.27
   fg.gain.setTargetAtTime(0, release, 0.15);
   fr.connect(hp).connect(fg).connect(env);
-  fr.start(when, 2 + (rub.rate % 1) * 3); fr.stop(release + 1);
-  ring.nodes.push({ node: fr, until: release + 1 });
+  fr.start(when, 2 + (rub.rate % 1) * 3); fr.stop(release + 1); source(fr, release + 1);
   pool.add(ring);
 }
+
+/** sources a rub needs from the pool's budget */
+export const RUB_SOURCES = 10;
 
 /** Random values for one event, keyed by the layer and the event's index. */
 const eventRand = (seed: number, layer: string, i: number) => mulberry32(subSeed(subSeed(seed, "bowls:" + layer), "e" + i));
@@ -335,12 +355,12 @@ export function bowlLayer(layer: string, make: (r: Rand) => Bowl, rubChance: num
             const seconds = uni(r, 8, 32);
             if (bowl) {
               const q = bowl.material === "crystal";
-              pool.reserve(when, 7);
+              pool.reserve(when, RUB_SOURCES);
               rub(v, pool, layer, when, bowl, {
-                seconds, gain: STRIKE_GAIN * 0.8,
-                rate: q ? uni(r, 0.3, 0.5) : uni(r, 1.2, 3) * (0.8 + 0.4 * (1 - bowl.f0 / 600)),
-                depth: q ? 0.3 : uni(r, 0.3, 0.6),
-                swell: q ? uni(r, 8, 15) : uni(r, 5, 10),
+                seconds: q ? seconds + 8 : seconds, gain: STRIKE_GAIN * 0.8,
+                rate: q ? uni(r, 0.3, 0.45) : uni(r, 1.0, 2.2) * (0.85 + 0.3 * (1 - bowl.f0 / 600)),
+                depth: q ? 0.45 : uni(r, 0.7, 0.95),
+                swell: q ? uni(r, 12, 20) : uni(r, 7, 12),
               });
             }
             next = when + seconds * (2 + sched()) * (1.3 - 0.6 * a) + quiet;

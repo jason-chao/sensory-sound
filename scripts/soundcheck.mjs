@@ -38,7 +38,7 @@ const r = await page.evaluate(async () => {
   const stress = (e) => {
     const v = e.vctx, r = mulberry32(99), when = 1.0;
     for (let i = 0; i < 16; i++) bowls.strike(v, v.bowls, "stress", when + i * 0.005, bowls.bronze(r), { angle: r() * Math.PI, mallet: 1, gain: 0.1 * CALIBRATION.bronze, pan: i % 2 ? 0.9 : -0.9 });
-    bowls.rub(v, v.bowls, "stress", 0.5, bowls.bronze(r), { seconds: 6, rate: 3, depth: 0.6, swell: 1, gain: 0.08 * CALIBRATION.rubbed });
+    bowls.rub(v, v.bowls, "stress", 0.5, bowls.bronze(r), { seconds: 6, rate: 3, depth: 0.9, swell: 1, gain: 0.08 * CALIBRATION.rubbed });
     for (let i = 0; i < 6; i++) e.touch(i / 6, 0.8, ["bell", "pluck", "pop", "drop", "burst", "split", "thump"][i]);
   };
   const s = await SoundEngine.render({ seconds: 8, seed: 5, sampleRate: 22050, layers: all, params: loud, fadeInSeconds: 0.1, setup: stress });
