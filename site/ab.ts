@@ -138,7 +138,7 @@ function renderSynth(kind: Kind, seed: number): Promise<Prepared | null> {
       try {
         const buffer = await SoundEngine.render({
           seconds: SECONDS, seed, sampleRate: 44100, layers: {},
-          params: { volume: 1, reverb: 0.15, soften: 0.3 }, fadeInSeconds: 0.01,
+          params: { volume: 1, reverb: 0.3, soften: 0.3 }, fadeInSeconds: 0.01,
           setup: setupBowl(kind, seed),
         });
         return { buffer, scale: loudnessScale(buffer) };
