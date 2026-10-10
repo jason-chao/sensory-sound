@@ -280,7 +280,7 @@ export function rub(v: VoiceCtx, pool: BowlPool, layer: string, when: number, bo
     wobble(rub.rate * 5, lfo.frequency);
     const depth = ctx.createGain(); depth.gain.value = rub.depth;
     wobble(rub.depth * 15, depth.gain);
-    depth.gain.setTargetAtTime(0, release, 1.2);         // the pattern stops turning
+    depth.gain.setTargetAtTime(0, release, 2.5);         // the pattern slows and stops turning
     lfo.connect(depth).connect(am.gain);
     const t0 = when + side * 0.5 / rub.rate;             // half a cycle apart
     lfo.start(t0); lfo.stop(stop); source(lfo);
@@ -292,7 +292,7 @@ export function rub(v: VoiceCtx, pool: BowlPool, layer: string, when: number, bo
   const lfoHi = ctx.createOscillator(); lfoHi.frequency.value = rub.rate * 1.5;
   wobble(rub.rate * 9, lfoHi.frequency);
   const depthHi = ctx.createGain(); depthHi.gain.value = 0.5;
-  depthHi.gain.setTargetAtTime(0, release, 1.2);
+  depthHi.gain.setTargetAtTime(0, release, 2.5);
   lfoHi.connect(depthHi).connect(amHi.gain);
   lfoHi.start(when + 0.17 / rub.rate); lfoHi.stop(stop); source(lfoHi);
   envHi.connect(amHi); amHi.connect(merge, 0, 0); amHi.connect(merge, 0, 1);
@@ -310,6 +310,8 @@ export function rub(v: VoiceCtx, pool: BowlPool, layer: string, when: number, bo
     const o = ctx.createOscillator(); o.frequency.value = f;
     wobble((q ? 60 : 170) * (high ? 1.5 : 1), o.detune);  // cents; the high tones wander a little more
     const g = ctx.createGain(); g.gain.value = level;
+    // once the stick leaves, the twin it was not driving rings on too, and the pair beats as after a strike
+    if (f === sung + m.split) g.gain.setTargetAtTime(q ? 0.3 : 0.5, release, 1.5);
     o.connect(g).connect(high ? envHi : env);
     o.start(when); o.stop(stop); source(o);
     carrier ??= o;
@@ -320,7 +322,7 @@ export function rub(v: VoiceCtx, pool: BowlPool, layer: string, when: number, bo
   const glp = ctx.createBiquadFilter(); glp.type = "lowpass"; glp.frequency.value = q ? 50 : 120; glp.Q.value = 0.7;
   const ringmod = ctx.createGain(); ringmod.gain.value = 0; carrier!.connect(ringmod.gain);
   const gg = ctx.createGain(); gg.gain.value = dB(q ? -34 : -33) * 47;   // -33 dB relative to the tone for bronze, -34 for crystal
-  gg.gain.setTargetAtTime(0, release, 0.15);
+  gg.gain.setTargetAtTime(0, release, 0.6);              // the stick lifts away over about a second
   grain.connect(glp).connect(ringmod).connect(gg).connect(env);
   grain.start(when, 1 + (rub.rate * 3) % 5); grain.stop(release + 1); source(grain, release + 1);
   ring.partials.push({ f: sung, amp: (t) => t < when ? 0 : t < release ? curve[Math.min(steps - 1, Math.floor((t - when) / swell * steps))] : rub.gain * Math.exp(-(t - release) / tau(ringFor)) });
@@ -328,7 +330,7 @@ export function rub(v: VoiceCtx, pool: BowlPool, layer: string, when: number, bo
   const fr = ctx.createBufferSource(); fr.buffer = v.noise.white; fr.loop = true; fr.loopEnd = fr.buffer.duration - 0.5;
   const hp = ctx.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 2500; hp.Q.value = 0.5;
   const fg = ctx.createGain(); fg.gain.value = dB(q ? -55 : -45) / 0.27;   // the buffer's RMS above the filter is about 0.27
-  fg.gain.setTargetAtTime(0, release, 0.15);
+  fg.gain.setTargetAtTime(0, release, 0.6);
   fr.connect(hp).connect(fg).connect(env);
   fr.start(when, 2 + (rub.rate % 1) * 3); fr.stop(release + 1); source(fr, release + 1);
   pool.add(ring);
