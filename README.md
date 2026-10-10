@@ -79,6 +79,20 @@ The `bronze`, `rubbed` and `crystal` layers come from a study of how real bowls 
 
 The bowls ring at the natural pitch of their size, not in the soundscape's scale, as real bowls do. To keep that from turning harsh, a bowl that would sound within a critical band of something already playing is skipped, beats are kept below six hertz, strikes begin softly, and there is silence between bowls rather than a continuous drone. `tone` sets how hard the mallet is. These are design choices for a sound-sensitive audience; nothing here is a claim about calm or healing, and the notes in `docs/` say what the evidence does and does not support.
 
+### Bowl sessions
+
+A session plays a tuned set of bowls to a score, the way practitioner guides describe a bowl session: seven bowls on C D E F G A B (an eighth, C an octave up, is optional), crystal exact at its note and bronze a seeded distance from it as hand-made sets are, in the C3 or C4 octave, at 440 or 432 Hz. The scores are `arc` (arrival, descent, depth, expansion, return, with an opening from the lowest bowl up, a closing from the highest down, and silence at the end), `ascent` (lowest to highest and back, one bowl at a time), `single` (one note, struck and rubbed in turn) and `free`. A score says which notes may sound in each phase, how many bowls may be audible at once, which combinations are allowed (unison, fifth, thirds, the diatonic triads) and how long the pauses are.
+
+```ts
+await engine.start();
+engine.startSession({ seed: 3, seconds: 1800, score: "arc", material: "both", layered: true, root: "C4", reference: 440 });
+engine.onSessionEvent = (e) => console.log(e.kind, e.phase, e.note);
+engine.sessionState();   // phase, elapsed, remaining, what is audible
+engine.stopSession();    // what is sounding rings out; setStopped(true) hushes it and holds the session clock
+```
+
+`SessionSpec` in `src/session.ts` lists every field; missing ones take `DEFAULT_SESSION`'s values, and `SCORES`, `NOTES` and `NOTE_LABELS` are exported for building a menu. The same seed and spec give the same session when no other layer is running; with layers running, the shared voice budget can differ. The arc, the combinations and the tunings are conventions taken from practitioner guides and approximations of the instruments, offered so they can be tried; the notes in `docs/` say what the evidence does and does not support, and the labels practitioners attach to the notes are kept out of the library's behaviour.
+
 ## Working on it
 
 ```bash
@@ -94,6 +108,7 @@ Two browser scripts check the sound itself. They need Playwright's Chromium (`np
 - `node scripts/measure.mjs` measures the loudness of each layer and soundscape. Run it after adding or changing a layer, and adjust `CALIBRATION` in `src/engine.ts` so the new layer matches the rest.
 - `node scripts/regress.mjs capture` saves every soundscape's render to `fixtures/` (not in git), and `check` compares later renders with them, so a change to the engine cannot alter an existing soundscape unnoticed.
 - `node scripts/renderwav.mjs out.wav 60 '{"soundscape":"singing"}'` writes a render to a WAV file for listening or measuring.
+- `node scripts/sessioncheck.mjs` checks bowl sessions: repeatable renders at 44.1 and 48 kHz, the ceiling under a dense session, the silence at the end, the tuning of a set, and the start, hush, resume, stop cycle live.
 
 `npm run build:site` builds the playground and the listening pages under `site/` (a phone benchmark, a blind comparison against recordings, and a comfort session) as a static site in `site-dist/`.
 

@@ -7,7 +7,7 @@ export default defineConfig({
   build: {
     outDir: "site-dist",
     emptyOutDir: true,
-    rollupOptions: { input: { index: "index.html", bench: "site/bench.html", ab: "site/ab.html", comfort: "site/comfort.html" } },
+    rollupOptions: { input: { index: "index.html", bench: "site/bench.html", ab: "site/ab.html", comfort: "site/comfort.html", session: "site/session.html" } },
   },
   define: { __BUILD_ID__: JSON.stringify(process.env.SITE_BUILD_ID ?? "dev") },
 });

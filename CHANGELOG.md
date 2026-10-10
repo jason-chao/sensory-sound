@@ -6,6 +6,8 @@ Three new layers of singing bowls, built from measurements of real bowls (see `d
 
 The bowl layers share a budget of sounding voices, fade the oldest bowl out when it is full, and skip a bowl that would sit within a critical band of something already sounding. `setStopped(true)` now has a stated contract (30 dB down within 150 ms, 50 dB within half a second, reverb included), `stop()` disconnects the engine from a context you supplied, and `render()` takes a `setup` callback for one-off events. `scripts/regress.mjs` checks that the earlier soundscapes still render the same, and the sound check now tests the ceiling with sixteen bowls struck at once.
 
+Bowl sessions: `startSession`, `stopSession`, `sessionState` and `onSessionEvent` play a tuned set (C to B, crystal exact, bronze approximately, C3 or C4, 440 or 432 Hz) to a score with phases, an overlap limit, allowed combinations and pauses, with the opening and closing sequences and the closing silence that practitioner guides describe. Four scores are supplied. Hush holds the session clock. `scripts/sessioncheck.mjs` checks it.
+
 ## 0.1.2
 
 Two options for pages that play in the background: `output: "stream"` sends the sound only into the stream from `stream()`, for a media element with lock-screen controls, and `lookahead` sets how far ahead notes are scheduled.

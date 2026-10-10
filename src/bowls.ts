@@ -99,7 +99,7 @@ export class BowlPool {
 
 /** One mode pair of a bowl: frequency, level, decay and split, before a strike sets the
  *  balance of its two members. */
-interface Mode {
+export interface Mode {
   f: number;
   /** amplitude relative to the fundamental's, 0..1 */
   level: number;
@@ -111,7 +111,7 @@ interface Mode {
   j: number;
 }
 
-interface Bowl { material: Material; f0: number; modes: Mode[] }
+export interface Bowl { material: Material; f0: number; modes: Mode[] }
 
 const clamp = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, x));
 const dB = (x: number) => Math.pow(10, x / 20);
@@ -126,9 +126,12 @@ const tau = (t60: number) => t60 / 6.908;
  *  are the medians measured from recordings, stretched together by one value per bowl; the
  *  second partial is often as loud as the fundamental; the fundamental rings for about 30 to
  *  60 s and the upper partials for less, shorter the higher they are. */
-export function bronze(r: Rand): Bowl {
-  const size = r();                                   // 0 = small and high, 1 = large and low
-  const f0 = 600 * Math.pow(180 / 600, size);
+export function bronze(r: Rand, at?: number): Bowl {
+  let size = r();                                     // 0 = small and high, 1 = large and low
+  let f0 = 600 * Math.pow(180 / 600, size);
+  if (at !== undefined) {                             // a bowl of a given pitch: its size follows, held within the model's range
+    f0 = at; size = clamp(Math.log(600 / at) / Math.log(600 / 180), 0, 1);
+  }
   const stretch = uni(r, -0.03, 0.03);
   const ratios = [1, 2.85, 5.46, 8.4, 11.8];
   const levels = [0, uni(r, -2, 4), uni(r, -18, -12), uni(r, -18, -12), uni(r, -29, -23)];
@@ -147,15 +150,17 @@ export function bronze(r: Rand): Bowl {
 /** A crystal (quartz) bowl of a seeded size: a nearly pure, low tone with its partials far
  *  down, splits of about 0.07 % that beat only every few seconds, and a long ring. The
  *  evidence behind these values is five recordings, so they are a sketch of the sound. */
-export function crystal(r: Rand): Bowl {
-  const size = r();
-  const f0 = 350 * Math.pow(130 / 350, size);
+export function crystal(r: Rand, at?: number): Bowl {
+  let size = r();
+  let f0 = 350 * Math.pow(130 / 350, size);
+  if (at !== undefined) { f0 = at; size = clamp(Math.log(350 / at) / Math.log(350 / 130), 0, 1); }
   const ratios = [1, 2.556, 4.62, 7.2];
   const levels = [0, uni(r, -24, -16), uni(r, -38, -30), uni(r, -48, -42)];
   const t60a = uni(r, 36, 60);
   const t60k = [1, uni(r, 0.2, 0.3), uni(r, 0.15, 0.25), uni(r, 0.1, 0.2)];
   const modes: Mode[] = ratios.map((ratio, n) => {
-    const f = f0 * ratio * (1 + uni(r, -0.008, 0.008));
+    const jitter = uni(r, -0.008, 0.008);
+    const f = f0 * ratio * (1 + (n === 0 && at !== undefined ? 0 : jitter));   // a manufactured bowl is exact at its pitch
     const t = Math.min(t60a * t60k[n], 25000 / f);
     return { f, level: dB(levels[n]), t60: [t * uni(r, 0.9, 1.1), t * uni(r, 0.9, 1.1)], split: uni(r, 0.15, 0.3) * ratio, j: n + 2 };
   });
@@ -235,6 +240,8 @@ export interface Rub {
   /** seconds for the tone to swell to within a few percent of full */
   swell: number;
   gain: number;
+  /** false keeps the rise and fall the same in both ears (a centred image); default true */
+  stereo?: boolean;
 }
 
 /** Rub a bowl from `when` and release it after `rub.seconds`, into its own ringing decay.
@@ -282,7 +289,7 @@ export function rub(v: VoiceCtx, pool: BowlPool, layer: string, when: number, bo
     wobble(rub.depth * 15, depth.gain);
     depth.gain.setTargetAtTime(0, release, 2.5);         // the pattern slows and stops turning
     lfo.connect(depth).connect(am.gain);
-    const t0 = when + side * 0.5 / rub.rate;             // half a cycle apart
+    const t0 = when + (rub.stereo === false ? 0 : side * 0.5 / rub.rate);   // half a cycle apart
     lfo.start(t0); lfo.stop(stop); source(lfo);
     wob.connect(am).connect(merge, 0, side);
   }

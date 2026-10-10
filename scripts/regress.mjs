@@ -1,6 +1,6 @@
 // Renders every soundscape offline and compares the samples with fixtures captured from an earlier
 // version, so that a change to the engine cannot alter an existing soundscape unnoticed.
-// Fixtures live in fixtures/ (not in git): 12 s at 22050 Hz, both channels, as raw float32.
+// Fixtures live in fixtures/ (not in git): 40 s at 22050 Hz, both channels, as raw float32.
 // usage: npx vite --port 5174 &  then  node scripts/regress.mjs capture|check [baseUrl]
 import { chromium } from "playwright";
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
@@ -15,7 +15,7 @@ const scapes = await page.evaluate(() => window.SOUNDSCAPES.map((s) => s.id));
 let fail = 0;
 for (const id of scapes) {
   const data = await page.evaluate(async (id) => {
-    const buf = await window.SoundEngine.render({ seconds: 12, seed: 11, sampleRate: 22050, soundscape: id, params: { activity: 0.8, volume: 0.6, breath: 0.5 }, fadeInSeconds: 1 });
+    const buf = await window.SoundEngine.render({ seconds: 40, seed: 11, sampleRate: 22050, soundscape: id, params: { activity: 0.8, volume: 0.6, breath: 0.5 }, fadeInSeconds: 1 });
     const out = new Float32Array(buf.length * 2);
     out.set(buf.getChannelData(0), 0); out.set(buf.getChannelData(1), buf.length);
     return Array.from(out);

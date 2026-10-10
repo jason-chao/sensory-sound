@@ -1,6 +1,7 @@
 import { mulberry32, subSeed, type Rand } from "./prng";
 import { LAYERS, SCALES, SOUNDSCAPES } from "./layers";
 import { BowlPool, bowlLayer, bronze, crystal } from "./bowls";
+import { Session, DEFAULT_SESSION, type SessionSpec, type SessionEvent, type SessionState } from "./session";
 
 /** Everything that shapes the sound. Values are targets; the engine follows them smoothly. */
 export interface SoundParams {
@@ -66,7 +67,7 @@ export interface VoiceCtx {
 export const CALIBRATION: Record<string, number> = {
   drone: 0.364, chimes: 1.697, bowls: 3.017, koto: 1.813, ocean: 0.49, rain: 2.162,
   wind: 1.397, stream: 3.175, noise: 0.852, pulse: 0.525, breath: 2.713,
-  bronze: 1.646, rubbed: 1.238, crystal: 1.626,
+  bronze: 1.646, rubbed: 1.238, crystal: 1.626, session: 3.4,
 };
 
 /** the kind of sound a touch makes */
@@ -389,6 +390,11 @@ export class SoundEngine {
   analyser: AnalyserNode | null = null;
   private rng: Rand = mulberry32(1);
   private timer: ReturnType<typeof setInterval> | undefined;
+  private hushed = false;
+  private session: Session | null = null;
+  private sessionGain: GainNode | null = null;
+  /** called for every session event: a phase beginning, a strike, a rub, the end */
+  onSessionEvent?: (e: SessionEvent) => void;
 
   constructor(opts: EngineOptions = {}) {
     this.seed = opts.seed ?? 1;
@@ -489,6 +495,8 @@ export class SoundEngine {
     if (this.timer) { clearInterval(this.timer); this.timer = undefined; }
     for (const e of this.voices.values()) { e.voice.stop(); e.gain.disconnect(); }
     this.voices.clear();
+    if (this.session && this.ctx) this.session.stop(this.ctx.currentTime);
+    this.session = null; this.sessionGain = null;
     this.clip.disconnect();   // a supplied context keeps running: nothing of ours, not even the reverb tail, stays on it
     if (this.ctx instanceof AudioContext && !this.given) await this.ctx.close();
     this.ctx = null; this.streamDest = null; this.analyser = null;
@@ -535,6 +543,40 @@ export class SoundEngine {
       if (level > 0.002) entry.voice.update(now);
       else if (level < 0.0005) { entry.voice.stop(); entry.gain.disconnect(); this.voices.delete(info.id); }
     }
+    if (this.session) {
+      const l = this.session.spec.loudness;
+      this.sessionGain!.gain.setTargetAtTime(l * l * (CALIBRATION.session ?? 1), now, 0.4);
+      this.session.update(now, this.lookahead, this.hushed);
+    }
+  }
+
+  /** Start a bowl session (see src/session.ts); a running one is replaced from the beginning.
+   *  The engine must have started. Missing fields take DEFAULT_SESSION's values. */
+  startSession(spec: Partial<SessionSpec>): void {
+    const ctx = this.ctx;
+    if (!ctx) throw new Error("start the engine first");
+    this.stopSession();
+    const full: SessionSpec = { ...DEFAULT_SESSION, ...spec };
+    this.sessionGain = ctx.createGain(); this.sessionGain.gain.value = 0; this.sessionGain.connect(this.vctx.out);
+    const v: VoiceCtx = { ...this.vctx, out: this.sessionGain };
+    this.session = new Session(v, this.vctx.bowls, full, ctx.currentTime);
+    this.session.onEvent = (e) => this.onSessionEvent?.(e);
+  }
+
+  /** Stop scheduling the session; what is sounding rings out (use setStopped(true) to hush it). */
+  stopSession(): void {
+    if (!this.session || !this.ctx) return;
+    this.session.stop(this.ctx.currentTime);
+    const g = this.sessionGain!;
+    g.gain.setTargetAtTime(0, this.ctx.currentTime + 60, 1);   // the tails have rung out by then
+    setTimeout(() => g.disconnect(), 70000);
+    this.session = null; this.sessionGain = null;
+  }
+
+  /** Where the session is: phase, time, what is audible. Null when none is running. */
+  sessionState(): SessionState | null {
+    if (!this.session || !this.ctx) return null;
+    return this.session.state(this.ctx.currentTime, this.hushed);
   }
 
   /** A touch plays one soft sound. x and y are 0..1; left to right walks up the scale, so the
@@ -589,6 +631,7 @@ export class SoundEngine {
   setStopped(stopped: boolean): void {
     if (!this.ctx) return;
     const now = this.ctx.currentTime;
+    this.hushed = stopped;
     this.fade.gain.cancelScheduledValues(now);
     this.fade.gain.setTargetAtTime(stopped ? 0 : 1, now, stopped ? 0.025 : 1.2);
   }

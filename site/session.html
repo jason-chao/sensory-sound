@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>sensory-sound bowl session</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { font-family: system-ui, sans-serif; background: #0c1018; color: #e8ecf4; margin: 0; padding: 16px; max-width: 900px; overflow-x: hidden; }
+      h1 { font-weight: 300; margin: 0 0 4px; } p { color: #9aa5b8; }
+      button { background: #1b2230; color: inherit; border: 1px solid #333c4d; border-radius: 8px; padding: 10px 14px; min-height: 44px; font-size: 1rem; font-family: inherit; cursor: pointer; margin: 2px; max-width: 100%; }
+      button.on { background: #2b4a46; border-color: #8fd6c8; }
+      button:disabled { opacity: 0.45; cursor: default; }
+      button.big { width: 100%; min-height: 64px; font-size: 1.2rem; margin: 6px 0; }
+      button.wide { width: 100%; margin: 6px 0; }
+      button.hush { border-color: #d9a066; } button.hush.on { background: #4a2b2b; border-color: #e88; }
+      button small { display: block; color: #9aa5b8; font-size: 0.75rem; margin-top: 2px; }
+      button.on small { color: #c9e9e2; }
+      .row { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; align-items: center; }
+      .ctl { margin: 10px 0; }
+      .ctl .title { display: flex; justify-content: space-between; gap: 8px; font-size: 0.9rem; min-height: 24px; }
+      .ctl .title output { color: #8fd6c8; }
+      .ctl .ends { display: flex; justify-content: space-between; color: #6b7488; font-size: 0.75rem; }
+      label { display: grid; grid-template-columns: 90px 1fr 48px; gap: 10px; align-items: center; margin: 4px 0; font-size: 0.9rem; min-height: 44px; }
+      label.check { grid-template-columns: 44px 1fr; }
+      label.field { grid-template-columns: 1fr; gap: 4px; }
+      input[type=range] { width: 100%; accent-color: #8fd6c8; min-height: 44px; margin: 0; }
+      input[type=number], select { background: #1b2230; color: inherit; border: 1px solid #333c4d; border-radius: 8px; padding: 8px; min-height: 44px; font-size: 1rem; font-family: inherit; width: 100%; }
+      input[type=checkbox] { width: 24px; height: 24px; accent-color: #8fd6c8; margin: 0 auto; }
+      .meter { height: 6px; background: #1b2230; border-radius: 3px; overflow: hidden; margin: 12px 0; }
+      .meter i { display: block; height: 100%; width: 0; background: #8fd6c8; }
+      section { border: 1px solid #333c4d; border-radius: 12px; padding: 12px 16px; margin: 14px 0; }
+      h2 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; color: #9aa5b8; margin: 0 0 8px; }
+      .status { font-size: 1.1rem; line-height: 1.5; min-height: 44px; }
+      .status b { font-size: 1.6rem; font-weight: 400; }
+      .note { color: #9aa5b8; font-size: 0.85rem; }
+      .pending { color: #d9a066; font-size: 0.85rem; min-height: 1.2em; margin: 4px 0; }
+      .bowls { display: flex; flex-wrap: wrap; gap: 8px 4px; margin: 12px 0; }
+      .bowl { width: 62px; text-align: center; font-size: 0.75rem; color: #9aa5b8; }
+      .bowl .circle { width: 44px; height: 44px; border-radius: 50%; border: 2px solid #333c4d; margin: 0 auto 4px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #e8ecf4; transition: background 0.2s, border-color 0.2s; }
+      .bowl.lit.bronze .circle { background: #7a5a26; border-color: #d9a066; }
+      .bowl.lit.crystal .circle { background: #2b4a6a; border-color: #8fc6e8; }
+      .bowl.lit.both .circle { background: linear-gradient(135deg, #7a5a26 50%, #2b4a6a 50%); border-color: #c9e9e2; }
+      .bowl b { display: block; color: #e8ecf4; font-weight: 400; font-size: 0.9rem; }
+      .legend { display: flex; flex-wrap: wrap; gap: 12px; color: #9aa5b8; font-size: 0.75rem; }
+      .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: -1px; margin-right: 4px; }
+      .legend i.bronze { background: #7a5a26; border: 1px solid #d9a066; } .legend i.crystal { background: #2b4a6a; border: 1px solid #8fc6e8; }
+      .log { font-family: ui-monospace, monospace; font-size: 0.75rem; line-height: 1.5; max-height: 220px; overflow-y: auto; background: #1b2230; border-radius: 8px; padding: 8px; white-space: pre; overflow-x: auto; }
+      textarea { width: 100%; min-height: 100px; background: #1b2230; color: inherit; border: 1px solid #333c4d; border-radius: 8px; padding: 8px; font: inherit; font-size: 0.9rem; }
+      textarea.results { font-family: ui-monospace, monospace; font-size: 0.7rem; min-height: 160px; }
+      footer { color: #6b7488; font-size: 0.8rem; margin-top: 24px; }
+    </style>
+  </head>
+  <body>
+    <h1>Bowl session</h1>
+    <p>A set of tuned bowls played to a score, following the conventions practitioner guides describe for a session. Every option can be switched on its own and the session restarted. Set the volume low before you start. Hush silences everything at once and holds the session where it is; press it again to go on. Nothing leaves the phone: copy the settings or the results and send them yourself.</p>
+    <div id="app"></div>
+    <script type="module" src="./session.ts"></script>
+  </body>
+</html>
