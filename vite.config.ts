@@ -7,5 +7,6 @@ export default defineConfig(({ command }) => ({
     sourcemap: true,
     emptyOutDir: false,
   } : undefined,
+  define: { __BUILD_ID__: JSON.stringify("dev") },
   test: { include: ["tests/**/*.test.ts"] },
 }));

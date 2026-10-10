@@ -3,3 +3,5 @@ dist
 *.log
 .env
 .env.*
+site-dist
+deploy.local/

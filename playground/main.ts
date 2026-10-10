@@ -1,4 +1,5 @@
 import { SoundEngine, LAYERS, SCALES, SOUNDSCAPES, DEFAULT_PARAMS, type TouchSound } from "../src/index";
+import { footer } from "../site/footer";
 
 const app = document.getElementById("app")!;
 const engine = new SoundEngine({ seed: 7 });
@@ -13,6 +14,9 @@ const section = (title: string, ...kids: (Node | string)[]) => el("section", {},
 // transport
 const startBtn = el("button", { textContent: "Start", onclick: async () => { await engine.start(); startBtn.classList.add("on"); } });
 const stopBtn = el("button", { textContent: "Stop", onclick: async () => { await engine.stop(); startBtn.classList.remove("on"); } });
+// hush: everything silent at once, until pressed again
+let hushed = false;
+const hushBtn = el("button", { className: "hush", textContent: "Hush", onclick: () => { hushed = !hushed; engine.setStopped(hushed); hushBtn.classList.toggle("on", hushed); hushBtn.textContent = hushed ? "Hushed: press to resume" : "Hush"; } });
 const meter = el("div", { className: "meter" }, el("i"));
 setInterval(() => { (meter.firstChild as HTMLElement).style.width = `${Math.min(100, engine.peak() * 100)}%`; }, 100);
 
@@ -50,11 +54,12 @@ const sync = () => {
 };
 
 app.append(
-  section("Transport", el("div", { className: "row" }, startBtn, stopBtn), meter),
+  section("Transport", el("div", { className: "row" }, startBtn, stopBtn, hushBtn), meter),
   section("Soundscapes", el("div", { className: "row" }, ...scapeBtns)),
   section("Layers", ...layerRows),
   section("Parameters", ...paramRows, el("label", {}, "scale", scaleSel, el("span"))),
   section("Touch sounds", el("div", { className: "row" }, ...touchBtns)),
+  footer(),
 );
 engine.applySoundscape("shore");
 sync();
