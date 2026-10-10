@@ -1,10 +1,15 @@
 import { SoundEngine, LAYERS, SCALES, SOUNDSCAPES, DEFAULT_PARAMS, type TouchSound } from "../src/index";
 import { footer } from "../site/footer";
+import * as bowls from "../src/bowls";
+import { CALIBRATION } from "../src/engine";
+import { mulberry32 } from "../src/prng";
 
 const app = document.getElementById("app")!;
 const engine = new SoundEngine({ seed: 7 });
 (window as unknown as { engine: SoundEngine; SoundEngine: typeof SoundEngine }).engine = engine;
 (window as unknown as { engine: SoundEngine; SoundEngine: typeof SoundEngine }).SoundEngine = SoundEngine;
+// for the scripts in scripts/: the catalogue, the bowl module and the seeded generator
+Object.assign(window, { SOUNDSCAPES, LAYERS, CALIBRATION, bowls, mulberry32 });
 
 const el = <T extends HTMLElement = HTMLElement>(tag: string, props: Record<string, unknown> = {}, ...kids: (Node | string)[]): T => {
   const e = Object.assign(document.createElement(tag), props) as T; e.append(...kids); return e;

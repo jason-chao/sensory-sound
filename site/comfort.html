@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>A few sounds</title>
+    <style>
+      * { box-sizing: border-box; }
+      html { font-size: 18px; }
+      body { font-family: system-ui, sans-serif; background: #0c1018; color: #e8ecf4; margin: 0; padding: 16px; max-width: 640px; overflow-x: hidden; line-height: 1.5; }
+      h1 { font-weight: 300; font-size: 1.8rem; margin: 0 0 8px; line-height: 1.2; }
+      h2 { font-size: 1.1rem; font-weight: 400; margin: 20px 0 8px; }
+      p { margin: 8px 0; }
+      .quiet { color: #9aa5b8; }
+      button { background: #1b2230; color: inherit; border: 1px solid #333c4d; border-radius: 10px; padding: 12px 16px; min-height: 56px; font-size: 1.1rem; font-family: inherit; cursor: pointer; margin: 0; }
+      button.on { background: #2b4a46; border-color: #8fd6c8; }
+      button:disabled { opacity: 0.45; cursor: default; }
+      button.big { width: 100%; min-height: 72px; font-size: 1.3rem; margin: 8px 0; }
+      button.wide { width: 100%; margin: 8px 0; }
+      button.hush { border-color: #d9a066; } button.hush.on { background: #4a2b2b; border-color: #e88; }
+      .row { display: flex; gap: 8px; margin: 8px 0; }
+      .row button { flex: 1 1 0; }
+      .choices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 8px 0 16px; }
+      @media (max-width: 440px) { .choices { grid-template-columns: 1fr; } }
+      label { display: grid; grid-template-columns: 90px 1fr 56px; gap: 10px; align-items: center; margin: 8px 0; min-height: 56px; }
+      label.text { grid-template-columns: 1fr; gap: 4px; }
+      input[type=range] { width: 100%; accent-color: #8fd6c8; min-height: 56px; margin: 0; }
+      input[type=number], input[type=text] { background: #1b2230; color: inherit; border: 1px solid #333c4d; border-radius: 10px; padding: 10px 12px; min-height: 56px; font-size: 1.1rem; font-family: inherit; width: 100%; }
+      .meter { height: 10px; background: #1b2230; border-radius: 5px; overflow: hidden; margin: 16px 0; }
+      .meter i { display: block; height: 100%; width: 0; background: #8fd6c8; }
+      .status { min-height: 56px; display: flex; align-items: center; }
+      .controls { border-top: 1px solid #333c4d; margin-top: 20px; padding-top: 12px; }
+      .scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 12px -16px; padding: 0 16px; }
+      table { border-collapse: collapse; font-size: 1rem; }
+      th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #1b2230; vertical-align: top; }
+      th { color: #9aa5b8; font-weight: 400; white-space: nowrap; }
+      textarea { width: 100%; min-height: 160px; background: #1b2230; color: inherit; border: 1px solid #333c4d; border-radius: 10px; padding: 10px; font-family: ui-monospace, monospace; font-size: 1rem; }
+      footer { color: #6b7488; font-size: 1rem; margin-top: 32px; }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="./comfort.ts"></script>
+  </body>
+</html>

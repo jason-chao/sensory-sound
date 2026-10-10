@@ -1,5 +1,11 @@
 # Changes
 
+## 0.2.0
+
+Three new layers of singing bowls, built from measurements of real bowls (see `docs/`): `bronze` (struck bronze bowls), `rubbed` (a bowl rubbed with a stick) and `crystal` (quartz bowls, struck softly or rubbed slowly). Each bowl rings at the natural pitch of its size rather than in the soundscape's scale, with the stretched partials, the loud second partial, the slow beating and the long uneven decay of the recordings. Two new soundscapes use them, Singing bowls and Crystal bowls. The existing `bowls` layer and the eight earlier soundscapes are unchanged, sample for sample.
+
+The bowl layers share a budget of sounding voices, fade the oldest bowl out when it is full, and skip a bowl that would sit within a critical band of something already sounding. `setStopped(true)` now has a stated contract (30 dB down within 150 ms, 50 dB within half a second, reverb included), `stop()` disconnects the engine from a context you supplied, and `render()` takes a `setup` callback for one-off events. `scripts/regress.mjs` checks that the earlier soundscapes still render the same, and the sound check now tests the ceiling with sixteen bowls struck at once.
+
 ## 0.1.2
 
 Two options for pages that play in the background: `output: "stream"` sends the sound only into the stream from `stream()`, for a media element with lock-screen controls, and `lookahead` sets how far ahead notes are scheduled.

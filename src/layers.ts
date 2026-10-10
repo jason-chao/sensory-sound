@@ -18,6 +18,9 @@ export const LAYERS: LayerInfo[] = [
   { id: "noise", label: "Brown noise", blurb: "A deep, even hush" },
   { id: "pulse", label: "Soft pulse", blurb: "A slow heartbeat-like beat" },
   { id: "breath", label: "Breath", blurb: "Follows the breathing pace" },
+  { id: "bronze", label: "Bronze bowls", blurb: "Struck bronze bowls, each ringing at its own pitch" },
+  { id: "rubbed", label: "Rubbed bowl", blurb: "A bowl rubbed with a stick: a slow swell, a turning tone, then release" },
+  { id: "crystal", label: "Crystal bowls", blurb: "Near-pure low tones, struck softly or rubbed slowly" },
 ];
 
 export const SCALES: Record<string, { label: string; steps: number[] }> = {
@@ -48,4 +51,6 @@ export const SOUNDSCAPES: Soundscape[] = [
   { id: "chimes", label: "Chimes alone", blurb: "sparse chimes, nothing else", scale: "pentaMajor", layers: { chimes: 0.8 } },
   { id: "rain", label: "Rainy window", blurb: "rain, warm drone", scale: "pentaMajor", layers: { rain: 0.46, drone: 0.78 } },
   { id: "breathing", label: "Breathing", blurb: "breath sound at the breathing pace, soft drone, bowls", scale: "pentaMajor", layers: { breath: 0.41, drone: 0.78, bowls: 0.16 } },
+  { id: "singing", label: "Singing bowls", blurb: "bronze bowls struck and rubbed, a very quiet drone", scale: "pentaMinor", layers: { bronze: 0.77, rubbed: 0.7, drone: 0.38 } },
+  { id: "crystal", label: "Crystal bowls", blurb: "crystal bowls, a little wind", scale: "pentaMinor", layers: { crystal: 0.8, wind: 0.26 } },
 ];

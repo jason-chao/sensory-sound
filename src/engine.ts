@@ -1,5 +1,6 @@
 import { mulberry32, subSeed, type Rand } from "./prng";
 import { LAYERS, SCALES, SOUNDSCAPES } from "./layers";
+import { BowlPool, bowlLayer, bronze, crystal } from "./bowls";
 
 /** Everything that shapes the sound. Values are targets; the engine follows them smoothly. */
 export interface SoundParams {
@@ -54,6 +55,10 @@ export interface VoiceCtx {
   params: SoundParams;
   /** seconds ahead to schedule */
   lookahead: number;
+  /** the engine's seed, for layers that keep their own random streams */
+  seed: number;
+  /** shared by the bowl layers: voice budget and roughness guard */
+  bowls: BowlPool;
 }
 
 /** Per-layer gain so that every layer at full level is about equally loud. Measured with
@@ -61,6 +66,7 @@ export interface VoiceCtx {
 export const CALIBRATION: Record<string, number> = {
   drone: 0.364, chimes: 1.697, bowls: 3.017, koto: 1.813, ocean: 0.49, rain: 2.162,
   wind: 1.397, stream: 3.175, noise: 0.852, pulse: 0.525, breath: 2.713,
+  bronze: 1.646, rubbed: 1.261, crystal: 1.33,
 };
 
 /** the kind of sound a touch makes */
@@ -351,7 +357,10 @@ const breath: VoiceFactory = (v) => {
   };
 };
 
-const FACTORIES: Record<string, VoiceFactory> = { drone, chimes, bowls, koto, ocean, rain, wind, stream, noise, pulse, breath };
+const FACTORIES: Record<string, VoiceFactory> = {
+  drone, chimes, bowls, koto, ocean, rain, wind, stream, noise, pulse, breath,
+  bronze: bowlLayer("bronze", bronze, 0), rubbed: bowlLayer("rubbed", bronze, 1), crystal: bowlLayer("crystal", crystal, 0.4, 0.5),
+};
 
 /** Master chain: voices -> dry + reverb -> soften -> volume -> limiter -> soft clip -> out.
  *  The limiter and clip stages sit after everything, so no voice, input or bug
@@ -375,6 +384,7 @@ export class SoundEngine {
   private soften!: BiquadFilterNode;
   private master!: GainNode;
   private fade!: GainNode;
+  private clip!: WaveShaperNode;
   private streamDest: MediaStreamAudioDestinationNode | null = null;
   analyser: AnalyserNode | null = null;
   private rng: Rand = mulberry32(1);
@@ -404,10 +414,12 @@ export class SoundEngine {
     this.fade = ctx.createGain(); this.fade.gain.value = 0;
     const comp = ctx.createDynamicsCompressor();
     comp.threshold.value = -16; comp.knee.value = 8; comp.ratio.value = 14; comp.attack.value = 0.003; comp.release.value = 0.4;
+    // the ceiling: the curve peaks at 0.85 of full scale; the 2x oversampling can overshoot that
+    // by under 1 %, so the output never exceeds 0.86 (scripts/soundcheck.mjs checks this)
     const clip = ctx.createWaveShaper();
     const curve = new Float32Array(1025);
     for (let i = 0; i < 1025; i++) curve[i] = Math.tanh(((i / 512) - 1) * 1.5) / Math.tanh(1.5) * 0.85;
-    clip.curve = curve; clip.oversample = "2x";
+    clip.curve = curve; clip.oversample = "2x"; this.clip = clip;
     this.analyser = ctx.createAnalyser(); this.analyser.fftSize = 2048;
     bus.connect(this.dry).connect(this.soften);
     bus.connect(conv).connect(this.wet).connect(this.soften);
@@ -420,8 +432,11 @@ export class SoundEngine {
     this.fade.gain.linearRampToValueAtTime(1, ctx.currentTime + this.fadeIn);
 
     const params = this.params;
+    // the drone's chord, for the bowls' roughness guard, while the drone is audible
+    const steady = () => (this.levels.get("drone") ?? 0) > 0.02 ? [[0, -1], [0, 0], [2, 0], [4, 0], [0, 1]].map(([d, o]) => this.vctx.freq(d, o)) : [];
     this.vctx = {
       ctx: ctx as AudioContext, out: bus, rand, noise: noiseBuffers(ctx, rand), params, lookahead: this.lookahead,
+      seed: this.seed, bowls: new BowlPool(64, steady),
       freq(degree, octave) {
         const steps = (SCALES[params.scale] ?? SCALES.pentaMajor).steps;
         const n = steps.length;
@@ -474,6 +489,7 @@ export class SoundEngine {
     if (this.timer) { clearInterval(this.timer); this.timer = undefined; }
     for (const e of this.voices.values()) { e.voice.stop(); e.gain.disconnect(); }
     this.voices.clear();
+    this.clip.disconnect();   // a supplied context keeps running: nothing of ours, not even the reverb tail, stays on it
     if (this.ctx instanceof AudioContext && !this.given) await this.ctx.close();
     this.ctx = null; this.streamDest = null; this.analyser = null;
   }
@@ -566,12 +582,15 @@ export class SoundEngine {
     }
   }
 
-  /** Fade out quickly (for a stop control) or back in slowly. */
+  /** Hush (for a stop control): everything, the reverb tail included, is at least 30 dB down
+   *  within 150 ms and 50 dB down within half a second (the compressor's release lets a little
+   *  through as it recovers), and stays silent until setStopped(false), which brings the sound
+   *  back over a few seconds. The layers keep running quietly, so nothing restarts with a burst. */
   setStopped(stopped: boolean): void {
     if (!this.ctx) return;
     const now = this.ctx.currentTime;
     this.fade.gain.cancelScheduledValues(now);
-    this.fade.gain.setTargetAtTime(stopped ? 0 : 1, now, stopped ? 0.03 : 1.2);
+    this.fade.gain.setTargetAtTime(stopped ? 0 : 1, now, stopped ? 0.025 : 1.2);
   }
 
   /** Restart the generative layers from a seed, so the same notes come again. */
@@ -612,7 +631,9 @@ export class SoundEngine {
 
   /** Render `seconds` of sound to a buffer, offline and faster than real time, with the given
    *  layers and parameters. The same seed and settings give the same buffer. */
-  static async render(opts: { seconds: number; seed?: number; sampleRate?: number; layers?: Record<string, number>; soundscape?: string; params?: Partial<SoundParams>; fadeInSeconds?: number }): Promise<AudioBuffer> {
+  static async render(opts: { seconds: number; seed?: number; sampleRate?: number; layers?: Record<string, number>; soundscape?: string; params?: Partial<SoundParams>; fadeInSeconds?: number;
+    /** called once the engine has started, before rendering: for one-off events and for tests */
+    setup?: (engine: SoundEngine) => void }): Promise<AudioBuffer> {
     const rate = opts.sampleRate ?? 44100;
     const ctx = new OfflineAudioContext(2, Math.ceil(opts.seconds * rate), rate);
     const engine = new SoundEngine({ seed: opts.seed ?? 1, context: ctx, fadeInSeconds: opts.fadeInSeconds ?? 2 });
@@ -620,6 +641,7 @@ export class SoundEngine {
     if (opts.layers) engine.setLayers(opts.layers);
     if (opts.params) engine.set(opts.params);
     await engine.start();
+    opts.setup?.(engine);
     // the scheduler runs every 50 ms of rendered time
     const step = 0.05;
     for (let t = 0; t < opts.seconds; t += step) {

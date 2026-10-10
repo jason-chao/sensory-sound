@@ -1,0 +1,122 @@
+[
+  {
+    "id": "b11",
+    "kind": "struck-bronze",
+    "title": "Tibetan Singing Bowl hit 11inch.flac",
+    "author": "דג בלי מלח",
+    "licence": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Tibetan_Singing_Bowl_hit_11inch.flac",
+    "file": "clips/b11.mp3",
+    "start": 0,
+    "seconds": 16,
+    "note": "11 inch bronze bowl, struck once with a soft mallet; the recording begins 80 ms before the strike."
+  },
+  {
+    "id": "b45",
+    "kind": "struck-bronze",
+    "title": "Tibetan Singing Bowl hit 4.5inch.flac",
+    "author": "דג בלי מלח",
+    "licence": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Tibetan_Singing_Bowl_hit_4.5inch.flac",
+    "file": "clips/b45.mp3",
+    "start": 0,
+    "seconds": 23.5,
+    "note": "4.5 inch bronze bowl, struck once; the recording begins 90 ms before the strike."
+  },
+  {
+    "id": "sl6",
+    "kind": "struck-bronze",
+    "title": "singing bowl - single strike 6",
+    "author": "s-light",
+    "licence": "CC0",
+    "source": "https://freesound.org/people/s-light/sounds/415141/",
+    "file": "clips/sl6.mp3",
+    "start": 0,
+    "seconds": 25,
+    "note": "Bronze bowl struck once with a soft mallet; the recording begins 110 ms before the strike."
+  },
+  {
+    "id": "c1",
+    "kind": "struck-bronze",
+    "title": "Cuencos tibetanos al ser percutidos.wav",
+    "author": "Luis Alvaz",
+    "licence": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Cuencos_tibetanos_al_ser_percutidos.wav",
+    "file": "clips/c1.mp3",
+    "start": 745.2,
+    "seconds": 25,
+    "note": "A large bronze bowl at 163 Hz, one strike from a 17 minute recording of five bowls."
+  },
+  {
+    "id": "st",
+    "kind": "rubbed-bronze",
+    "title": "Small tibetan singing bowl.ogg",
+    "author": "Cassa342",
+    "licence": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Small_tibetan_singing_bowl.ogg",
+    "file": "clips/st.mp3",
+    "start": 13,
+    "seconds": 20,
+    "note": "Small bronze bowl rubbed with a stick, from the first contact to full voice."
+  },
+  {
+    "id": "r45",
+    "kind": "rubbed-bronze",
+    "title": "Tibetan Singing Bowl 4.5inch.flac",
+    "author": "דג בלי מלח",
+    "licence": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Tibetan_Singing_Bowl_4.5inch.flac",
+    "file": "clips/r45.mp3",
+    "start": 0,
+    "seconds": 17.5,
+    "note": "Small bronze bowl rubbed from silence, swelling over a few seconds, then released at about 13 s."
+  },
+  {
+    "id": "psq",
+    "kind": "struck-crystal",
+    "title": "CrystalBowl_96Khz24bit.wav",
+    "author": "psuess",
+    "licence": "CC0",
+    "source": "https://freesound.org/people/psuess/sounds/194434/",
+    "file": "clips/psq.mp3",
+    "start": 0.18,
+    "seconds": 25,
+    "note": "Crystal bowl struck once."
+  },
+  {
+    "id": "aq12",
+    "kind": "struck-crystal",
+    "title": "Aud 12 inch crystal bowl pure tone",
+    "author": "Asuriya",
+    "licence": "CC0",
+    "source": "https://freesound.org/people/Asuriya/sounds/530847/",
+    "file": "clips/aq12.mp3",
+    "start": 0,
+    "seconds": 8.5,
+    "note": "12 inch crystal bowl, free decay only; the recording starts after the strike, so there is no attack."
+  },
+  {
+    "id": "jk",
+    "kind": "rubbed-crystal",
+    "title": "Quartz crystal singing bowl.wav",
+    "author": "juskiddink",
+    "licence": "CC BY 4.0",
+    "source": "https://freesound.org/people/juskiddink/sounds/129219/",
+    "file": "clips/jk.mp3",
+    "start": 8,
+    "seconds": 25,
+    "note": "Quartz crystal bowl rubbed with a slow swell to full voice over about 20 s; the first 8 s of quiet contact are skipped."
+  },
+  {
+    "id": "qa",
+    "kind": "rubbed-crystal",
+    "title": "Binaural Cuencos de Cuarzo.ogg",
+    "author": "Lufke",
+    "licence": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Binaural_Cuencos_de_Cuarzo.ogg",
+    "file": "clips/qa.mp3",
+    "start": 14,
+    "seconds": 25,
+    "note": "Quartz bowl at 220 Hz rubbed from the start of the rub; a binaural recording summed to mono."
+  }
+]

@@ -5,3 +5,4 @@ dist
 .env.*
 site-dist
 deploy.local/
+fixtures

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>sensory-sound phone benchmark</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { font-family: system-ui, sans-serif; background: #0c1018; color: #e8ecf4; margin: 0; padding: 16px; max-width: 900px; overflow-x: hidden; }
+      h1 { font-weight: 300; margin: 0 0 4px; } p { color: #9aa5b8; }
+      button { background: #1b2230; color: inherit; border: 1px solid #333c4d; border-radius: 8px; padding: 10px 14px; min-height: 44px; font-size: 1rem; cursor: pointer; margin: 2px; }
+      button.on { background: #2b4a46; border-color: #8fd6c8; }
+      button:disabled { opacity: 0.45; cursor: default; }
+      button.big { width: 100%; min-height: 64px; font-size: 1.2rem; margin: 6px 0; }
+      button.hush { border-color: #d9a066; } button.hush.on { background: #4a2b2b; border-color: #e88; }
+      .row { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; align-items: center; }
+      label { display: grid; grid-template-columns: 110px 1fr 44px; gap: 10px; align-items: center; margin: 4px 0; font-size: 0.9rem; min-height: 44px; }
+      label.check { grid-template-columns: 44px 1fr; }
+      input[type=range] { width: 100%; accent-color: #8fd6c8; min-height: 44px; }
+      input[type=number] { background: #1b2230; color: inherit; border: 1px solid #333c4d; border-radius: 8px; padding: 8px; min-height: 44px; font-size: 1rem; width: 100%; }
+      input[type=checkbox] { width: 24px; height: 24px; accent-color: #8fd6c8; margin: 0 auto; }
+      .meter { height: 6px; background: #1b2230; border-radius: 3px; overflow: hidden; margin: 12px 0; }
+      .meter i { display: block; height: 100%; width: 0; background: #8fd6c8; }
+      section { border: 1px solid #333c4d; border-radius: 12px; padding: 12px 16px; margin: 14px 0; }
+      h2 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; color: #9aa5b8; margin: 0 0 8px; }
+      ol { padding-left: 20px; margin: 8px 0; } li { margin: 4px 0; }
+      .status { font-size: 1.1rem; line-height: 1.5; min-height: 44px; }
+      .status b { font-size: 1.6rem; font-weight: 400; }
+      .note { color: #9aa5b8; font-size: 0.85rem; }
+      .scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      table { border-collapse: collapse; font-size: 0.75rem; white-space: nowrap; }
+      th, td { text-align: right; padding: 3px 6px; border-bottom: 1px solid #1b2230; }
+      th { color: #9aa5b8; font-weight: 400; } td:nth-child(2), td:nth-child(3), td:nth-child(4) { text-align: left; }
+      pre { white-space: pre-wrap; font-size: 0.8rem; margin: 8px 0; }
+      textarea { width: 100%; min-height: 120px; background: #1b2230; color: inherit; border: 1px solid #333c4d; border-radius: 8px; padding: 8px; font: inherit; font-size: 0.9rem; }
+      textarea.results { font-family: ui-monospace, monospace; font-size: 0.7rem; min-height: 160px; }
+      footer { color: #6b7488; font-size: 0.8rem; margin-top: 24px; }
+    </style>
+  </head>
+  <body>
+    <h1>Phone benchmark</h1>
+    <p>Plays the singing-bowl layers for a set time and records how the phone copes. Nothing leaves the phone: copy the results and send them yourself.</p>
+    <div id="app"></div>
+    <script type="module" src="./bench.ts"></script>
+  </body>
+</html>

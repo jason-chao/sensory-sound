@@ -4,7 +4,7 @@ A small sound engine for the browser that makes slow, gentle ambient sound as it
 
 I wrote it for [Sensory Space](https://sensory-space.org), an artwork of light and sound designed with autistic adults in mind, and then gave it a home of its own so other projects can use it.
 
-It has eleven layers you can mix: a warm drone, chimes, singing bowls, plucked strings, ocean, rain, wind, a stream, brown noise, a soft pulse and a breath that follows a breathing pace. Eight ready-made soundscapes combine them, among them Shore at dusk, Temple bells and Rainy window, and they are matched in loudness, so you can switch between them without reaching for the volume.
+It has fourteen layers you can mix: a warm drone, chimes, singing bowls, plucked strings, ocean, rain, wind, a stream, brown noise, a soft pulse, a breath that follows a breathing pace, and three kinds of singing bowl modelled on real ones: struck bronze, a bowl rubbed with a stick, and crystal. Ten ready-made soundscapes combine them, among them Shore at dusk, Temple bells, Rainy window and Singing bowls, and they are matched in loudness, so you can switch between them without reaching for the volume.
 
 Sound fades in over five seconds when it starts, notes begin softly, and a limiter at the end holds the output below a fixed ceiling.
 
@@ -73,6 +73,12 @@ The lists of layers, scales and soundscapes are exported as `LAYERS`, `SCALES` a
 
 Touch sounds come in seven kinds: `bell`, `pluck`, `pop`, `drop`, `burst`, `split` and `thump`.
 
+### The singing bowls
+
+The `bronze`, `rubbed` and `crystal` layers come from a study of how real bowls sound, in the literature and in twenty recordings; the notes are in `docs/`. A bronze bowl here has five partials in the stretched ratios the recordings show, the second often as loud as the first, each split into a pair that beats a few times a second, and a fundamental that rings for half a minute or more while the high partials fade in seconds. A rubbed bowl swells over several seconds and its tone rises and falls slowly as the vibration pattern turns with the stick. Crystal bowls are lower, nearly pure and beat only every few seconds.
+
+The bowls ring at the natural pitch of their size, not in the soundscape's scale, as real bowls do. To keep that from turning harsh, a bowl that would sound within a critical band of something already playing is skipped, beats are kept below six hertz, strikes begin softly, and there is silence between bowls rather than a continuous drone. `tone` sets how hard the mallet is. These are design choices for a sound-sensitive audience; nothing here is a claim about calm or healing, and the notes in `docs/` say what the evidence does and does not support.
+
 ## Working on it
 
 ```bash
@@ -86,6 +92,10 @@ Two browser scripts check the sound itself. They need Playwright's Chromium (`np
 
 - `node scripts/soundcheck.mjs` renders the same seed twice and expects the same result, then plays every layer at full volume and makes sure the output stays under the ceiling.
 - `node scripts/measure.mjs` measures the loudness of each layer and soundscape. Run it after adding or changing a layer, and adjust `CALIBRATION` in `src/engine.ts` so the new layer matches the rest.
+- `node scripts/regress.mjs capture` saves every soundscape's render to `fixtures/` (not in git), and `check` compares later renders with them, so a change to the engine cannot alter an existing soundscape unnoticed.
+- `node scripts/renderwav.mjs out.wav 60 '{"soundscape":"singing"}'` writes a render to a WAV file for listening or measuring.
+
+`npm run build:site` builds the playground and the listening pages under `site/` (a phone benchmark, a blind comparison against recordings, and a comfort session) as a static site in `site-dist/`.
 
 ## Versions
 

@@ -18,12 +18,12 @@ const out = await page.evaluate(async () => {
     v.sort((a, b) => a - b); return v[Math.floor(v.length * 0.9)];
   };
   const layers = {}, scapes = {};
-  for (const id of ["drone", "chimes", "bowls", "koto", "ocean", "rain", "wind", "stream", "noise", "pulse", "breath"]) {
-    const buf = await SoundEngine.render({ seconds: 40, seed: 11, sampleRate: 22050, layers: { [id]: 1 }, params: { ...params, breath: 0.5 }, fadeInSeconds: 1 });
+  for (const id of window.LAYERS.map((l) => l.id)) {
+    const buf = await SoundEngine.render({ seconds: 60, seed: 11, sampleRate: 22050, layers: { [id]: 1 }, params: { ...params, breath: 0.5 }, fadeInSeconds: 1 });
     layers[id] = loud(buf);
   }
-  for (const id of ["shore", "temple", "garden", "hush", "stream", "chimes", "rain", "breathing"]) {
-    const buf = await SoundEngine.render({ seconds: 40, seed: 11, sampleRate: 22050, soundscape: id, params: { ...params, breath: 0.5 }, fadeInSeconds: 1 });
+  for (const id of window.SOUNDSCAPES.map((s) => s.id)) {
+    const buf = await SoundEngine.render({ seconds: 60, seed: 11, sampleRate: 22050, soundscape: id, params: { ...params, breath: 0.5 }, fadeInSeconds: 1 });
     scapes[id] = loud(buf);
   }
   return { layers, scapes };

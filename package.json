@@ -1,6 +1,6 @@
 {
   "name": "sensory-sound",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "A small generative ambient sound engine for the browser: eleven synthesised layers, named soundscapes, slow fades and a safety limiter. No samples.",
   "license": "MIT",
   "author": "Jason Chao",
