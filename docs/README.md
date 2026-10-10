@@ -13,6 +13,8 @@ The notes behind it are in [research_notes/Singing bowl sound synthesis](researc
 - `synthesis_methods.md`: additive, modal and physical models, and what works in Web Audio
 - `effects_and_safety.md`: the evidence on calm and "healing" effects, popular claims, hyperacusis and listening levels
 - `analysis_validation.md`: the measurement scripts checked against synthetic bowls with known values, with the tolerances to use when comparing synthesis to the recordings
+- `sessions_in_practice.md`: how practitioners structure bowl sessions (the seven-note set, order, arc, pacing, combinations), from their own guides, with the evidence caveat
+- `listening_log.md`: the blind comparison rounds against the recordings, what the listener said and what changed after each
 - `analysis/`: the scripts used for the measurements. They download the recordings to a local folder; no audio is kept in this repository.
 
 The trimmed reference clips used on the listening page are not in the repository either; a private script produces them from the recordings listed in `recording_analysis.md`, and `site/clips.json` records which recording, start time and length each clip uses.
